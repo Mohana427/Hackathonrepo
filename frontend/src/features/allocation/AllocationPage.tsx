@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { createAllocation, createTransferRequest } from '../../shared/api';
 import { AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { Button } from '../../shared/Button';
+import { Skeleton } from '../../shared/Skeleton';
+import { toast } from 'sonner';
 
 export const AllocationPage: React.FC = () => {
   const [assetId, setAssetId] = useState('');
@@ -17,6 +20,12 @@ export const AllocationPage: React.FC = () => {
     requested_to_department_id: '',
   });
   const [transferLoading, setTransferLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setIsInitializing(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +40,7 @@ export const AllocationPage: React.FC = () => {
         expected_return_date: expectedReturnDate ? new Date(expectedReturnDate).toISOString() : undefined
       });
       setStatus('success');
+      toast.success('Asset allocated successfully');
       // Reset form
       setAssetId('');
       setEmployeeId('');
@@ -44,7 +54,7 @@ export const AllocationPage: React.FC = () => {
         });
       } else {
         setStatus('idle');
-        alert("An error occurred: " + (err.response?.data?.detail || err.message));
+        toast.error(err.response?.data?.detail || err.message);
       }
     }
   };
@@ -59,144 +69,159 @@ export const AllocationPage: React.FC = () => {
         requested_to_employee_id: transferForm.requested_to_employee_id ? parseInt(transferForm.requested_to_employee_id) : undefined,
         requested_to_department_id: transferForm.requested_to_department_id ? parseInt(transferForm.requested_to_department_id) : undefined,
       });
-      alert("Transfer request submitted successfully!");
+      toast.success("Transfer request submitted successfully!");
       setShowTransferModal(false);
       setTransferForm({ requested_to_employee_id: '', requested_to_department_id: '' });
     } catch (err: any) {
-      alert("Error submitting transfer request: " + (err.response?.data?.detail || err.message));
+      toast.error("Error submitting transfer request: " + (err.response?.data?.detail || err.message));
     } finally {
       setTransferLoading(false);
     }
   };
 
+  if (isInitializing) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="bg-slate-900/50 p-6 rounded-3xl space-y-6">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-32" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Allocate Asset</h2>
+      <h2 className="text-3xl font-black text-white mb-6 tracking-tight">Allocate Asset</h2>
       
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow">
+      <form onSubmit={handleSubmit} className="space-y-4 bg-slate-900/50 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-slate-800">
         <div>
-          <label className="block text-sm font-medium mb-1">Asset ID</label>
+          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 ml-1">Asset ID</label>
           <input 
             type="number" 
             required 
             value={assetId} 
             onChange={e => setAssetId(e.target.value)}
-            className="w-full border p-2 rounded"
+            className="w-full bg-slate-800/50 border border-slate-700 text-white p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Employee ID</label>
+          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 ml-1">Employee ID</label>
           <input 
             type="number" 
             value={employeeId} 
             onChange={e => setEmployeeId(e.target.value)}
-            className="w-full border p-2 rounded"
+            className="w-full bg-slate-800/50 border border-slate-700 text-white p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             placeholder="Optional if department provided"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Expected Return Date</label>
+          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 ml-1">Expected Return Date</label>
           <input 
             type="date" 
             value={expectedReturnDate} 
             onChange={e => setExpectedReturnDate(e.target.value)}
-            className="w-full border p-2 rounded"
+            className="w-full bg-slate-800/50 border border-slate-700 text-white p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
         </div>
         
-        <button 
+        <Button 
           type="submit" 
-          disabled={status === 'loading'}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          isLoading={status === 'loading'}
+          variant="primary"
+          className="w-full py-3"
         >
-          {status === 'loading' ? 'Allocating...' : 'Allocate'}
-        </button>
+          Allocate Asset
+        </Button>
       </form>
 
       {status === 'success' && (
-        <div className="mt-4 p-4 bg-green-50 text-green-700 rounded flex items-center gap-2">
+        <div className="mt-4 p-4 bg-green-500/20 text-green-400 rounded-xl flex items-center gap-2 border border-green-500/30">
           <CheckCircle2 size={20} />
           <span>Asset allocated successfully!</span>
         </div>
       )}
 
       {status === 'conflict' && conflictData && (
-        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded">
+        <div className="mt-4 p-4 bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-xl">
           <div className="flex items-start gap-2 mb-3">
             <AlertCircle size={20} className="mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold text-amber-900">Asset Unavailable</h4>
+              <h4 className="font-bold text-amber-200">Asset Unavailable</h4>
               <p>This asset is currently held by <strong>{conflictData.holderName}</strong>.</p>
             </div>
           </div>
           <div className="ml-7">
-            <button 
+            <Button 
               onClick={() => setShowTransferModal(true)}
-              className="bg-amber-600 text-white px-3 py-1.5 rounded text-sm hover:bg-amber-700"
+              variant="primary"
+              className="text-sm"
             >
               Request Transfer
-            </button>
+            </Button>
           </div>
         </div>
       )}
        
-       {/* Transfer Request Modal */}
-       {showTransferModal && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
-             <button 
-               onClick={() => setShowTransferModal(false)}
-               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-             >
-               <X size={20} />
-             </button>
-             <h3 className="text-xl font-bold mb-4">Request Asset Transfer</h3>
-             <p className="text-sm text-gray-600 mb-6">
-               This asset is currently held by {conflictData?.holderName}. Please specify who should receive it.
-             </p>
-             <form onSubmit={handleTransferSubmit} className="space-y-4">
-               <div>
-                 <label className="block text-sm font-medium mb-1">Recipient Employee ID</label>
-                 <input 
-                   type="number" 
-                   value={transferForm.requested_to_employee_id} 
-                   onChange={e => setTransferForm({ ...transferForm, requested_to_employee_id: e.target.value })}
-                   className="w-full border p-2 rounded"
-                   placeholder="Employee ID"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium mb-1">Recipient Department ID</label>
-                 <input 
-                   type="number" 
-                   value={transferForm.requested_to_department_id} 
-                   onChange={e => setTransferForm({ ...transferForm, requested_to_department_id: e.target.value })}
-                   className="w-full border p-2 rounded"
-                   placeholder="Department ID"
-                 />
-               </div>
-               <div className="flex gap-3 pt-4">
-                 <button 
-                   type="button" 
-                   onClick={() => setShowTransferModal(false)}
-                   className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
-                 >
-                   Cancel
-                 </button>
-                 <button 
-                   type="submit" 
-                   disabled={transferLoading}
-                   className="flex-1 bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 disabled:opacity-50"
-                 >
-                   {transferLoading ? 'Submitting...' : 'Submit Request'}
-                 </button>
-               </div>
-             </form>
-           </div>
-         </div>
-       )}
-     </div>
-   );
+      {showTransferModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-md w-full p-8 relative">
+            <button 
+              onClick={() => setShowTransferModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h3 className="text-2xl font-black text-white mb-2">Request Asset Transfer</h3>
+            <p className="text-sm text-slate-400 mb-6">
+              This asset is currently held by {conflictData?.holderName}. Please specify the new recipient.
+            </p>
+            <form onSubmit={handleTransferSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 ml-1">Recipient Employee ID</label>
+                <input 
+                  type="number" 
+                  value={transferForm.requested_to_employee_id} 
+                  onChange={e => setTransferForm({ ...transferForm, requested_to_employee_id: e.target.value })}
+                  className="w-full bg-slate-800/50 border border-slate-700 text-white p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  placeholder="Employee ID"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 ml-1">Recipient Department ID</label>
+                <input 
+                  type="number" 
+                  value={transferForm.requested_to_department_id} 
+                  onChange={e => setTransferForm({ ...transferForm, requested_to_department_id: e.target.value })}
+                  className="w-full bg-slate-800/50 border border-slate-700 text-white p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  placeholder="Department ID"
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  type="button" 
+                  onClick={() => setShowTransferModal(false)}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  isLoading={transferLoading}
+                  variant="primary"
+                  className="flex-1"
+                >
+                  Submit Request
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
-

@@ -14,13 +14,6 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const baseStyles = "px-4 py-2 rounded-xl font-semibold transition-all duration-200 transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none";
   
-  const variants = {
-    primary: "bg-gradient-to-r from-slate-800 to-slate-900 text-white border border-slate-700 hover:from-slate-700 hover:to-slate-800 shadow-lg hover:shadow-blue-500/20",
-    secondary: "bg-slate-200 text-slate-900 hover:bg-slate-300 border border-slate-300",
-    danger: "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-500 hover:to-red-600 shadow-lg hover:shadow-red-500/20",
-    ghost: "bg-transparent text-slate-600 hover:bg-slate-100 border border-transparent hover:border-slate-200",
-  };
-
   // Special handling for dark theme pages
   const darkVariants = {
     primary: "bg-gradient-to-r from-blue-600 to-indigo-700 text-white border border-blue-400/30 hover:from-blue-500 hover:to-indigo-600 shadow-lg hover:shadow-blue-500/40",

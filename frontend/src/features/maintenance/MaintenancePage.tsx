@@ -4,8 +4,10 @@ import {
   createMaintenanceRequest, fetchMaintenanceHistory, 
   approveMaintenance, rejectMaintenance, assignTechnician, resolveMaintenance 
 } from '../../shared/api';
-
 import { useAuth } from '../../shared/AuthContext';
+import { Button } from '../../shared/Button';
+import { Skeleton } from '../../shared/Skeleton';
+import { toast } from 'sonner';
 
 export const MaintenancePage: React.FC = () => {
   const { user } = useAuth();
@@ -16,13 +18,22 @@ export const MaintenancePage: React.FC = () => {
   
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitializing(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const loadHistory = async (id: number) => {
+    setLoading(true);
     try {
       const data = await fetchMaintenanceHistory(id);
       setRequests(data);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,8 +53,9 @@ export const MaintenancePage: React.FC = () => {
       await loadHistory(parseInt(assetId));
       setDescription('');
       setPriority('medium');
+      toast.success('Maintenance request submitted');
     } catch (err: any) {
-      alert("Error: " + (err.response?.data?.detail || err.message));
+      toast.error(err.response?.data?.detail || err.message);
     } finally {
       setLoading(false);
     }
@@ -59,104 +71,135 @@ export const MaintenancePage: React.FC = () => {
       }
       if (action === 'resolve') await resolveMaintenance(id);
       
-      await loadHistory(parseInt(assetId));
+      await loadHistry(parseInt(assetId));
+      toast.success(`Request ${action}ed successfully`);
     } catch (err: any) {
-      alert(`Error during ${action}: ` + (err.response?.data?.detail || err.message));
+      toast.error(`Error during ${action}: ` + (err.response?.data?.detail || err.message));
     }
   };
+
+  if (isInitializing) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto flex flex-col lg:flex-row gap-6">
+        <div className="lg:w-1/3 space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <div className="bg-slate-900/50 p-6 rounded-3xl space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </div>
+        <div className="lg:w-2/3 space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <div className="bg-slate-900/50 p-6 rounded-3xl space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto flex flex-col lg:flex-row gap-6">
       {/* Raise Request Form */}
-      <div className="lg:w-1/3 bg-white p-6 rounded shadow h-fit">
-        <h2 className="text-xl font-bold mb-4">Raise Maintenance Request</h2>
+      <div className="lg:w-1/3 bg-slate-900/50 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-slate-800 h-fit">
+        <h2 className="text-2xl font-black text-white mb-6 tracking-tight">Raise Maintenance Request</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Asset ID</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 ml-1">Asset ID</label>
             <input 
               type="number" required 
               value={assetId} onChange={e => setAssetId(e.target.value)}
-              className="w-full border p-2 rounded"
+              className="w-full bg-slate-800/50 border border-slate-700 text-white p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Issue Description</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 ml-1">Issue Description</label>
             <textarea 
               required rows={3}
               value={description} onChange={e => setDescription(e.target.value)}
-              className="w-full border p-2 rounded"
+              className="w-full bg-slate-800/50 border border-slate-700 text-white p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Priority</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 ml-1">Priority</label>
             <select 
               value={priority} onChange={e => setPriority(e.target.value)}
-              className="w-full border p-2 rounded"
+              className="w-full bg-slate-800/50 border border-slate-700 text-white p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
             </select>
           </div>
-          <button 
+          <Button 
             type="submit" disabled={loading || !assetId}
-            className="w-full bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+            variant="primary"
+            className="w-full py-3"
           >
-            Submit Request
-          </button>
+            {loading ? 'Submitting...' : 'Submit Request'}
+          </Button>
         </form>
       </div>
-
-      {/* Status Board (List View) */}
-      <div className="lg:w-2/3 bg-white p-6 rounded shadow min-h-[500px]">
-        <h2 className="text-xl font-bold mb-4">Maintenance History</h2>
+ 
+      {/* Status Board */}
+      <div className="lg:w-2/3 bg-slate-900/50 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-slate-800 min-h-[500px]">
+        <h2 className="text-2xl font-black text-white mb-6 tracking-tight">Maintenance History</h2>
         {!assetId ? (
-          <p className="text-gray-500">Enter Asset ID to view history.</p>
+          <p className="text-slate-500 italic text-center py-12">Enter Asset ID to view history.</p>
+        ) : loading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
         ) : requests.length === 0 ? (
-          <p className="text-gray-500">No maintenance records found.</p>
+          <p className="text-slate-500 italic text-center py-12">No maintenance records found.</p>
         ) : (
           <div className="space-y-4">
             {requests.map(req => (
-              <div key={req.id} className="border rounded p-4 flex flex-col md:flex-row justify-between gap-4">
+              <div key={req.id} className="bg-slate-800/40 border border-slate-700 rounded-2xl p-4 flex flex-col md:flex-row justify-between gap-4 transition-colors hover:bg-slate-800/60">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold">REQ #{req.id}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      req.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      req.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                      req.status === 'rejected' ? 'bg-gray-100 text-gray-800' :
-                      'bg-blue-100 text-blue-800'
+                    <span className="font-bold text-white">REQ #{req.id}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${
+                      req.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                      req.status === 'resolved' ? 'bg-green-500/20 text-green-400' :
+                      req.status === 'rejected' ? 'bg-slate-700 text-slate-400' :
+                      'bg-blue-500/20 text-blue-400'
                     }`}>
-                      {req.status.replace('_', ' ').toUpperCase()}
+                      {req.status.replace('_', ' ')}
                     </span>
-                    <span className={`text-xs px-2 py-0.5 border rounded-full ${
-                      req.priority === 'high' ? 'border-red-500 text-red-500' : 'border-gray-300'
+                    <span className={`text-[10px] px-2 py-0.5 border rounded-full font-bold uppercase tracking-tighter ${
+                      req.priority === 'high' ? 'border-red-500 text-red-500' : 'border-slate-700 text-slate-500'
                     }`}>
-                      {req.priority.toUpperCase()}
+                      {req.priority}
                     </span>
                   </div>
-                  <p className="text-sm mt-2">{req.issue_description}</p>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-sm text-slate-300 mt-2">{req.issue_description}</p>
+                  <p className="text-xs text-slate-500 mt-2">
                     Raised: {new Date(req.created_at).toLocaleDateString()}
                     {req.technician_name && ` | Tech: ${req.technician_name}`}
                   </p>
                 </div>
-
-                {/* Actions (Role Gated) */}
+ 
                 {role === 'Asset Manager' && (
                   <div className="flex md:flex-col gap-2 justify-start md:justify-center">
-                    {req.status === 'pending' && (
-                      <>
-                        <button onClick={() => handleAction('approve', req.id)} className="bg-green-600 text-white text-xs px-3 py-1 rounded">Approve</button>
-                        <button onClick={() => handleAction('reject', req.id)} className="bg-gray-200 text-gray-800 text-xs px-3 py-1 rounded">Reject</button>
-                      </>
-                    )}
-                    {req.status === 'approved' && (
-                      <button onClick={() => handleAction('assign', req.id)} className="bg-blue-600 text-white text-xs px-3 py-1 rounded">Assign Tech</button>
-                    )}
-                    {(req.status === 'technician_assigned' || req.status === 'in_progress') && (
-                      <button onClick={() => handleAction('resolve', req.id)} className="bg-indigo-600 text-white text-xs px-3 py-1 rounded">Mark Resolved</button>
-                    )}
+                      {req.status === 'pending' && (
+                        <>
+                          <Button onClick={() => handleAction('approve', req.id)} variant="primary" className="text-xs px-3 py-1">Approve</Button>
+                          <Button onClick={() => handleAction('reject', req.id)} variant="secondary" className="text-xs px-3 py-1">Reject</Button>
+                        </>
+                      )}
+                      {req.status === 'approved' && (
+                        <Button onClick={() => handleAction('assign', req.id)} variant="primary" className="text-xs px-3 py-1">Assign Tech</Button>
+                      )}
+                      {(req.status === 'technician_assigned' || req.status === 'in_progress') && (
+                        <Button onClick={() => handleAction('resolve', req.id)} variant="primary" className="text-xs px-3 py-1">Mark Resolved</Button>
+                      )}
                   </div>
                 )}
               </div>

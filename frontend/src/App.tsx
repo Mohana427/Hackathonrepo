@@ -8,11 +8,14 @@ import { Dashboard } from './features/dashboard/Dashboard';
 import { AssetList } from './features/assets/AssetList';
 import { AssetForm } from './features/assets/AssetForm';
 import { AssetDetail } from './features/assets/AssetDetail';
+import { AccountSettings } from './features/auth/AccountSettings';
+import DefaultDemo from './components/ui/demo';
 import { AllocationPage } from './features/allocation/AllocationPage';
 import { TransferRequests } from './features/allocation/TransferRequests';
 import { BookingCalendar } from './features/booking/BookingCalendar';
 import { MaintenancePage } from './features/maintenance/MaintenancePage';
 import { LogOut, LayoutDashboard, Package, ArrowLeftRight, Calendar, Wrench, UserCircle } from 'lucide-react';
+import { Toaster } from 'sonner';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -73,6 +76,8 @@ const AppContent: React.FC = () => {
             <Route path="/assets" element={<ProtectedRoute><AssetList /></ProtectedRoute>} />
             <Route path="/assets/new" element={<ProtectedRoute><AssetForm /></ProtectedRoute>} />
             <Route path="/assets/:id" element={<ProtectedRoute><AssetDetail /></ProtectedRoute>} />
+            <Route path="/demo" element={<ProtectedRoute><DefaultDemo /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
             <Route path="/allocation" element={<ProtectedRoute><AllocationPage /></ProtectedRoute>} />
             <Route path="/transfers" element={<ProtectedRoute><TransferRequests /></ProtectedRoute>} />
             <Route path="/booking" element={<ProtectedRoute><BookingCalendar /></ProtectedRoute>} />
@@ -81,6 +86,7 @@ const AppContent: React.FC = () => {
           </Routes>
         </main>
       </div>
+      <Toaster position="top-right" richColors />
     </EnterpriseBackground>
   );
 };

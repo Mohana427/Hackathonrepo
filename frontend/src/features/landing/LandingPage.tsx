@@ -49,9 +49,13 @@ const Scene = () => {
 };
 
 const FeatureTag = ({ children }: { children: React.ReactNode }) => (
-  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 border border-white/20 text-blue-300 backdrop-blur-md">
+  <motion.span 
+    whileHover={{ scale: 1.05, backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
+    whileTap={{ scale: 0.95 }}
+    className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 border border-white/20 text-blue-300 backdrop-blur-md cursor-default transition-colors"
+  >
     {children}
-  </span>
+  </motion.span>
 );
 
 const FeatureDetail = ({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) => (
