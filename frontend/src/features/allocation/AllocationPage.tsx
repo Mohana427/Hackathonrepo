@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { createAllocation } from '../../shared/api';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { createAllocation, createTransferRequest } from '../../shared/api';
+import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 export const AllocationPage: React.FC = () => {
   const [assetId, setAssetId] = useState('');
@@ -10,10 +10,19 @@ export const AllocationPage: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'conflict'>('idle');
   const [conflictData, setConflictData] = useState<{ holderName: string, allocationId: number } | null>(null);
 
+  // Transfer Request Modal State
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferForm, setTransferForm] = useState({
+    requested_to_employee_id: '',
+    requested_to_department_id: '',
+  });
+  const [transferLoading, setTransferLoading] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
     setConflictData(null);
+    setShowTransferModal(false);
 
     try {
       await createAllocation({
@@ -39,6 +48,27 @@ export const AllocationPage: React.FC = () => {
       }
     }
   };
+
+  const handleTransferSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!conflictData) return;
+    setTransferLoading(true);
+    try {
+      await createTransferRequest({
+        allocation_id: conflictData.allocationId,
+        requested_to_employee_id: transferForm.requested_to_employee_id ? parseInt(transferForm.requested_to_employee_id) : undefined,
+        requested_to_department_id: transferForm.requested_to_department_id ? parseInt(transferForm.requested_to_department_id) : undefined,
+      });
+      alert("Transfer request submitted successfully!");
+      setShowTransferModal(false);
+      setTransferForm({ requested_to_employee_id: '', requested_to_department_id: '' });
+    } catch (err: any) {
+      alert("Error submitting transfer request: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -102,10 +132,7 @@ export const AllocationPage: React.FC = () => {
           </div>
           <div className="ml-7">
             <button 
-              onClick={() => {
-                alert(`Opening transfer request modal for allocation ${conflictData.allocationId}`);
-                // In a real app, this would open a modal calling createTransferRequest
-              }}
+              onClick={() => setShowTransferModal(true)}
               className="bg-amber-600 text-white px-3 py-1.5 rounded text-sm hover:bg-amber-700"
             >
               Request Transfer
@@ -113,6 +140,63 @@ export const AllocationPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
-  );
+       
+       {/* Transfer Request Modal */}
+       {showTransferModal && (
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+             <button 
+               onClick={() => setShowTransferModal(false)}
+               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+             >
+               <X size={20} />
+             </button>
+             <h3 className="text-xl font-bold mb-4">Request Asset Transfer</h3>
+             <p className="text-sm text-gray-600 mb-6">
+               This asset is currently held by {conflictData?.holderName}. Please specify who should receive it.
+             </p>
+             <form onSubmit={handleTransferSubmit} className="space-y-4">
+               <div>
+                 <label className="block text-sm font-medium mb-1">Recipient Employee ID</label>
+                 <input 
+                   type="number" 
+                   value={transferForm.requested_to_employee_id} 
+                   onChange={e => setTransferForm({ ...transferForm, requested_to_employee_id: e.target.value })}
+                   className="w-full border p-2 rounded"
+                   placeholder="Employee ID"
+                 />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium mb-1">Recipient Department ID</label>
+                 <input 
+                   type="number" 
+                   value={transferForm.requested_to_department_id} 
+                   onChange={e => setTransferForm({ ...transferForm, requested_to_department_id: e.target.value })}
+                   className="w-full border p-2 rounded"
+                   placeholder="Department ID"
+                 />
+               </div>
+               <div className="flex gap-3 pt-4">
+                 <button 
+                   type="button" 
+                   onClick={() => setShowTransferModal(false)}
+                   className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+                 >
+                   Cancel
+                 </button>
+                 <button 
+                   type="submit" 
+                   disabled={transferLoading}
+                   className="flex-1 bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 disabled:opacity-50"
+                 >
+                   {transferLoading ? 'Submitting...' : 'Submit Request'}
+                 </button>
+               </div>
+             </form>
+           </div>
+         </div>
+       )}
+     </div>
+   );
 };
+
