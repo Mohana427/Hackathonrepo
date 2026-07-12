@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/auth': 'http://localhost:8000',
+      '/assets': 'http://localhost:8000',
       '/allocations': 'http://localhost:8000',
       '/bookings': 'http://localhost:8000',
       '/maintenance-requests': 'http://localhost:8000',

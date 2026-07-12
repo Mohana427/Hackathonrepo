@@ -2,8 +2,17 @@ export interface Asset {
   id: number;
   name: string;
   tag: string;
+  category: string;
+  serial_number: string | null;
+  location: string;
+  condition: 'new' | 'good' | 'fair' | 'poor' | 'damaged';
   is_bookable: boolean;
   status: 'available' | 'allocated' | 'reserved' | 'under_maintenance' | 'lost' | 'retired' | 'disposed';
+  acquisition_cost: number | null;
+  acquisition_date: string | null;
+  photo_url: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Employee {
@@ -14,6 +23,17 @@ export interface Employee {
 export interface Department {
   id: number;
   name: string;
+}
+
+export interface DashboardStats {
+  total_assets: number;
+  available: number;
+  allocated: number;
+  under_maintenance: number;
+  pending_bookings: number;
+  pending_transfers: number;
+  pending_maintenance: number;
+  overdue_allocations: number;
 }
 
 // Allocation & Transfer

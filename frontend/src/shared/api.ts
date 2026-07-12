@@ -1,7 +1,7 @@
 import axios from 'axios';
-import type { 
-  Allocation, TransferRequest, OverdueAllocation, 
-  Booking, MaintenanceRequest 
+import type {
+  Asset, Allocation, TransferRequest, OverdueAllocation,
+  Booking, MaintenanceRequest, DashboardStats
 } from './types';
 
 const api = axios.create({
@@ -10,7 +10,6 @@ const api = axios.create({
 
 export default api;
 
-// Interceptor to attach Bearer JWT token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -18,6 +17,45 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// --- ASSETS ---
+export const fetchAssets = async (search?: string, status?: string) => {
+  const params: Record<string, string> = {};
+  if (search) params.search = search;
+  if (status) params.status_filter = status;
+  const res = await api.get<Asset[]>('/assets', { params });
+  return res.data;
+};
+
+export const fetchAsset = async (id: number) => {
+  const res = await api.get<Asset>(`/assets/${id}`);
+  return res.data;
+};
+
+export const createAsset = async (data: {
+  name: string; tag: string; category?: string; serial_number?: string;
+  location?: string; condition?: string; is_bookable?: boolean;
+  acquisition_cost?: number; acquisition_date?: string; photo_url?: string;
+}) => {
+  const res = await api.post<Asset>('/assets', data);
+  return res.data;
+};
+
+export const updateAsset = async (id: number, data: Partial<Asset>) => {
+  const res = await api.patch<Asset>(`/assets/${id}`, data);
+  return res.data;
+};
+
+export const deleteAsset = async (id: number) => {
+  const res = await api.delete(`/assets/${id}`);
+  return res.data;
+};
+
+// --- DASHBOARD ---
+export const fetchDashboardStats = async () => {
+  const res = await api.get<DashboardStats>('/assets/dashboard/stats');
+  return res.data;
+};
 
 // --- ALLOCATION ---
 export const fetchTransferRequests = async () => {
@@ -62,7 +100,7 @@ export const createBooking = async (data: { asset_id: number; start_time: string
 };
 
 export const fetchBookings = async (assetId: number) => {
-  const res = await api.get<Booking[]>(`/bookings`, { params: { asset_id: assetId } });
+  const res = await api.get<Booking[]>('/bookings', { params: { asset_id: assetId } });
   return res.data;
 };
 
